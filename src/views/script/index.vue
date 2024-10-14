@@ -208,7 +208,7 @@ export default class Script extends Vue {
   // TODO: Because the editor does not support the parsing of the protobuf language, the editor language is temporarily set to javascript.
   private currentSchema: SchemaType = 'protobuf'
   private currentFunction: FunctionType = 'javascript'
-  private readonly inputTypeList: PayloadType[] = ['JSON', 'Plaintext', 'Base64', 'Hex']
+  private readonly inputTypeList: PayloadType[] = ['JSON', 'Plaintext', 'Base64', 'Hex', 'spBv1.0']
   // dialog show
   private showSaveDialog: boolean = false
   private showImportScript: boolean = false

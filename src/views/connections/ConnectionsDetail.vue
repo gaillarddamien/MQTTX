@@ -237,7 +237,11 @@
               @change="handleReceivedMsgTypeChange"
             >
               <el-option-group :label="$t('connections.receivedPayloadDecodedBy')">
-                <el-option v-for="type in ['Plaintext', 'JSON', 'Base64', 'Hex', 'CBOR']" :key="type" :value="type">
+                <el-option
+                  v-for="type in ['Plaintext', 'JSON', 'Base64', 'Hex', 'CBOR', 'spBv1.0']"
+                  :key="type"
+                  :value="type"
+                >
                 </el-option>
               </el-option-group>
             </el-select>
@@ -316,6 +320,8 @@ import _ from 'lodash'
 import { Subject, fromEvent } from 'rxjs'
 import { bufferTime, map, filter, takeUntil, shareReplay } from 'rxjs/operators'
 import cbor from 'cbor'
+import * as sparkplug from 'sparkplug-payload'
+const sparkplugbpayload = sparkplug.get('spBv1.0')!
 
 import time from '@/utils/time'
 import matchMultipleSearch from '@/utils/matchMultipleSearch'
@@ -350,6 +356,7 @@ import { jsonStringify } from '@/utils/jsonUtils'
 import { LeftValues, BodyTopValues, MsgTopValues, DetailLeftValues } from '@/utils/styles'
 import getErrorReason from '@/utils/mqttErrorReason'
 import { isLargeData } from '@/utils/data'
+import Long from 'long'
 
 type CommandType =
   | 'searchContent'
@@ -1716,6 +1723,13 @@ export default class ConnectionsDetail extends Vue {
           return undefined
         }
       }
+      if (publishType === 'spBv1.0') {
+        const payload = {
+          timestamp: new Date().getTime(),
+          metrics: JSON.parse(publishValue),
+        }
+        return Buffer.from(sparkplugbpayload.encodePayload(payload))
+      }
       return publishValue
     }
     const genReceivePayload = (receiveType: PayloadType, receiveValue: Buffer) => {
@@ -1742,6 +1756,18 @@ export default class ConnectionsDetail extends Vue {
         } catch (error) {
           throw error
         }
+      }
+      if (receiveType === 'spBv1.0') {
+        return JSON.stringify(
+          sparkplugbpayload.decodePayload(Uint8Array.from(receiveValue)),
+          (key: string, value: any) => {
+            if (typeof value === 'bigint' || Long.isLong(value)) {
+              return value.toString()
+            } else {
+              return value
+            }
+          },
+        )
       }
       return receiveValue.toString()
     }
